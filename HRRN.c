@@ -16,45 +16,22 @@ void main() {
     */
 
     /*
-        **** To take fine name input from the user ***
-    char fileName[50];
-    printf("\nEnter file name: ");
-    scanf("%s", fileName);
+        **** To take file name input from the user ***
+        char fileName[50];
+        printf("\nEnter file name: ");
+        scanf("%s", fileName);
     */
 
-    PROCESS *processes = NULL;
-    int n = getProcessesFile("input.txt", &processes);
+    PROCESS *process = NULL;
+    int n = getProcessesFile("input.txt", &process);
 
-    if(processes) {
-        for(int i = 0; i < n-1; i++)                // sort according to arrival time
-        {
-            for(int j = i+1; j < n; j++)
-            {
-                if(processes[i].arrive_time > processes[j].arrive_time)
-                {
-                    PROCESS t = processes[i];
-                    processes[i] = processes[j];
-                    processes[j] = t;
-                    continue;
-                }
-
-                if(processes[i].arrive_time == processes[j].arrive_time) {          // if same arrival time, sort on burst time
-                    if(processes[i].burst_time > processes[j].burst_time) {
-                        PROCESS t = processes[i];
-                        processes[i] = processes[j];
-                        processes[j] = t;
-                    }
-                }
-            }
-        }
-
-        GANTT *gantt = getGanttHRRN(processes, n);
+    if(n > 0) {
+        GANTT *gantt = getGanttHRRN(process, n);
 
         if(gantt) displayGantt(gantt);
-        displayProcesses(processes, n);
+        displayProcesses(process, n);
         
         destroyGantt(gantt);
-        destroyProcesses(processes);
+        destroyProcesses(process);
     }
-    else printf("\nFailed to read the processes!\n");
 }

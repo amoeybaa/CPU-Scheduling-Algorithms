@@ -1,4 +1,4 @@
-// Program to implement FCFS (First Come First Serve) scheduling algorithm
+// Program to implement LJF (Longest Job First) scheduling algorithm
 
 #include "Schedule.h"
 
@@ -17,23 +17,22 @@ void main() {
     */
 
     /*
-            **** To take file name as input from the user ***
+        **** To take file name input from the user ***
         char fileName[50];
         printf("\nEnter file name: ");
         scanf("%s", fileName);
-
     */
 
-    PROCESS *process = NULL;
-    int n = getProcessesFile("input.txt", &process);
+    PROCESS *processes = NULL;
+    int n = getProcessesFile("input.txt", &processes);
 
     if(n > 0) {
-        GANTT *gantt = getGanttFCFS(process, n);
+        GANTT *gantt = getGanttLJF(processes, n);
 
         if(gantt) displayGantt(gantt);
-        displayProcesses(process, n);
+        displayProcesses(processes, n);
         
         destroyGantt(gantt);
-        destroyProcesses(process);
+        destroyProcesses(processes);
     }
 }

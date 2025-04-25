@@ -1,0 +1,21 @@
+# Object files
+*.o
+
+# Executables
+*.exe
+*.out
+
+# Backup/temporary files
+*~
+*.swp
+*.log
+core
+
+# IDE/editor folders
+.vscode/
+.idea/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+.vscode/

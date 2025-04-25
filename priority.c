@@ -1,9 +1,8 @@
-// Program to implement FCFS (First Come First Serve) scheduling algorithm
+// Program to implement Priority (non-preemptive) scheduling algorithm.
 
 #include "Schedule.h"
 
 void main() {
-
     /*
         *** To take all inputs manually ***
         int n = -1;
@@ -17,18 +16,17 @@ void main() {
     */
 
     /*
-            **** To take file name as input from the user ***
+        **** To take file name input from the user ***
         char fileName[50];
         printf("\nEnter file name: ");
         scanf("%s", fileName);
-
     */
 
     PROCESS *process = NULL;
-    int n = getProcessesFile("input.txt", &process);
+    int n = getProcessesFilePriority("input_priority.txt", &process);
 
     if(n > 0) {
-        GANTT *gantt = getGanttFCFS(process, n);
+        GANTT *gantt = getGanttPriority(process, n);
 
         if(gantt) displayGantt(gantt);
         displayProcesses(process, n);
