@@ -62,6 +62,7 @@ GANTT* getGanttLJF(PROCESS *, int);
 // *** Preemptive Scheduling Algorithms ***
 GANTT* getGanttSRTF(PROCESS *, int);
 GANTT* getGanttPriorityPreemptive(PROCESS *, int);
+GANTT* getGanttLRTF(PROCESS *, int);
 
 void displayGantt(GANTT *);
 void destroyGantt(GANTT *);
@@ -1226,6 +1227,127 @@ GANTT* getGanttPriorityPreemptive(PROCESS *process, int n) {
                 gnew = NULL;
             }
             if(min_idx != -1 && (gcurr->pid == process[min_idx].pid)) {
+                gcurr->finish_time = gnew->finish_time;
+                free(gnew);
+                gnew = NULL;
+            }
+        }
+
+        if(!ghead) {
+            ghead = gcurr = gnew;
+        }
+        else {
+            if(gnew) {
+                gcurr->next = gnew;
+                gcurr = gnew;
+            }
+        }
+        curr_time++;
+    }
+
+    return ghead;
+}
+
+GANTT* getGanttLRTF(PROCESS *process, int n) {
+    /*
+        INTRODUCTION:
+            Simulates Longest Remaining Time First (LRTF) preemptive scheduling.
+
+        INPUT PARAMETERS:
+            - process (PROCESS*): process array.
+            - n (int): number of processes.
+
+        OUTPUT PARAMETERS:
+            - Constructs GANTT chart linked list.
+
+        RETURN VALUES:
+            - (GANTT*): pointer to GANTT chart head.
+
+        APPROACH:
+            - Sort processes on arrival time, or on burst time in descending order if arrival times are same.
+            - At each time unit, run process with longest remaining time.
+            - Preempt if necessary.
+            - Update GANTT chart and process stats.
+    */
+
+    if(n < 1) {
+        printf("\nInvalid number of Processes!\n");
+        return NULL;
+    }
+
+    if(process) {
+        for(int i = 0; i < n-1; i++)                // sort according to arrival time
+        {
+            for(int j = i+1; j < n; j++)
+            {
+                if(process[i].arrive_time > process[j].arrive_time)
+                {
+                    PROCESS t = process[i];
+                    process[i] = process[j];
+                    process[j] = t;
+                    continue;
+                }
+                if(process[i].arrive_time == process[j].arrive_time) {          // if same arrival time, sort on burst time in descending order
+                    if(process[i].burst_time < process[j].burst_time) {
+                        PROCESS t = process[i];
+                        process[i] = process[j];
+                        process[j] = t;
+                    }
+                }
+            }
+        }
+    }
+    else {
+        printf("\nFailed to read the processes!\n");
+        return NULL;
+    }
+
+    GANTT *ghead = NULL, *gnew = NULL, *gcurr = NULL;
+    int completed = 0, curr_time = 0;
+
+    while (completed < n) {
+        int max_idx = -1;
+        int max_burst = INT_MIN;
+
+        for (int i = 0; i < n; i++) {
+            if (process[i].arrive_time <= curr_time && process[i].burst_time > 0) {
+                if (process[i].burst_time > max_burst) {
+                    max_burst = process[i].burst_time;
+                    max_idx = i;
+                }
+            }
+        }
+
+        GANTT *gnew = (GANTT*)malloc(sizeof(GANTT));
+
+        if(max_idx == -1) {            // system is IDLE
+            gnew->pid = -1;
+            gnew->start_time = curr_time;
+            gnew->finish_time = curr_time + 1;
+            gnew->next = NULL;
+        }
+        else {
+            gnew->pid = process[max_idx].pid;
+            gnew->start_time = curr_time;
+            gnew->finish_time = curr_time + 1;
+            gnew->next = NULL;
+
+            process[max_idx].burst_time--;
+
+            if (process[max_idx].burst_time == 0) {
+                completed++;
+                process[max_idx].turnaround_time = gnew->finish_time - process[max_idx].arrive_time;
+                process[max_idx].wait_time = process[max_idx].turnaround_time - process[max_idx].initial_burst;
+            }
+        }
+
+        if(gcurr) {
+            if(max_idx == -1 && gcurr->pid == -1) {
+                gcurr->finish_time = gnew->finish_time;
+                free(gnew);
+                gnew = NULL;
+            }
+            if(max_idx != -1 && (gcurr->pid == process[max_idx].pid)) {
                 gcurr->finish_time = gnew->finish_time;
                 free(gnew);
                 gnew = NULL;
