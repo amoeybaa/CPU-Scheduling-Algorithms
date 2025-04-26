@@ -70,8 +70,6 @@ GANTT* getGanttRoundRobin(PROCESS *, int, int);
 void displayGantt(GANTT *);
 void destroyGantt(GANTT *);
 
-// Additional supporting functions
-int min(int, int);
 
 PROCESS* getProcesses(int n) {
     /*
@@ -1381,6 +1379,28 @@ GANTT* getGanttLRTF(PROCESS *process, int n) {
 }
 
 GANTT* getGanttRoundRobin(PROCESS *process, int n, int time_slice) {
+    /*
+        INTRODUCTION:
+            Implements the Round Robin CPU scheduling algorithm.
+
+        INPUT PARAMETERS:
+            - process (PROCESS*): Array of process structure
+            - n (int): Number of processes.
+            - time_slice (int): The time quantum for the Round Robin scheduling.
+
+        OUTPUT PARAMETERS:
+            - Constructs Gantt chart linked list
+
+        RETURN VALUES:
+            - ghead (GANTT*): Pointer to the head of the GANTT linked list representing the scheduling timeline.
+
+        APPROACH:
+            - Validate number of processes and time_slice.
+            - Sort processes based on their arrival time.
+            - Initialize a circular queue to manage the scheduling order.
+            - Run a loop until all processes are completed:
+            - Update GANTT chart and process stats.
+    */
 
     if(n < 1 || !process) {
         printf("\nInvalid number of Processes!\n");
@@ -1414,21 +1434,23 @@ GANTT* getGanttRoundRobin(PROCESS *process, int n, int time_slice) {
 
     GANTT *ghead = NULL, *gnew = NULL, *gcurr = NULL;
     int completed = 0, curr_time = 0;
-    int queue[n], front = 0, rear = -1;
+    int queue[n], front = 0, rear = -1, q_size = 0;
     int *in_queue = (int *)calloc(n, sizeof(int));
 
     while (completed < n) {
 
         for(int i = 0; i < n; i++) {
             if(process[i].arrive_time <= curr_time && process[i].burst_time > 0 && !in_queue[i]) {
-                queue[++rear] = i;
+                rear = (rear+1)%n;
+                queue[rear] = i;
                 in_queue[i] = 1;
+                q_size++;
             }
         }
 
         GANTT *gnew = (GANTT*)malloc(sizeof(GANTT));
 
-        if(front > rear) {            // queue is empty and system is IDLE
+        if(q_size == 0) {            // queue is empty and system is IDLE
             gnew->pid = -1;
             gnew->start_time = curr_time;
             gnew->finish_time = curr_time + 1;
@@ -1450,10 +1472,13 @@ GANTT* getGanttRoundRobin(PROCESS *process, int n, int time_slice) {
             continue;
         }
 
-        int curr_idx = queue[front++];
+        int curr_idx = queue[front];
+        front = (front+1)%n;
+        q_size--;
+
         gnew->pid = process[curr_idx].pid;
         gnew->start_time = curr_time;
-        int exec_time = min(time_slice, process[curr_idx].burst_time);
+        int exec_time = (process[curr_idx].burst_time > time_slice) ? time_slice : process[curr_idx].burst_time;
         gnew->finish_time = curr_time + exec_time;
         gnew->next = NULL;
 
@@ -1468,13 +1493,17 @@ GANTT* getGanttRoundRobin(PROCESS *process, int n, int time_slice) {
 
         for (int i = 0; i < n; ++i) {
             if (process[i].arrive_time <= curr_time && process[i].burst_time > 0 && !in_queue[i]) {
-                queue[++rear] = i;
+                rear = (rear+1)%n;
+                queue[rear] = i;
                 in_queue[i] = 1;
+                q_size++;
             }
         }
 
         if(process[curr_idx].burst_time > 0) {
-            queue[++rear] = curr_idx;
+            rear = (rear+1)%n;
+            queue[rear] = curr_idx;
+            q_size++;
         }
         else {
             completed++;
@@ -1482,6 +1511,7 @@ GANTT* getGanttRoundRobin(PROCESS *process, int n, int time_slice) {
             process[curr_idx].wait_time = process[curr_idx].turnaround_time - process[curr_idx].initial_burst;
         }
     }
+    free(in_queue);
     return ghead;
 }
 
@@ -1547,11 +1577,6 @@ void destroyGantt(GANTT *ghead) {
         ghead = ghead->next;
         free(gcurr);
     }
-}
-
-int min(int a, int b) {
-    if(a < b) return a;
-    return b;
 }
 
 #endif          // SCHEDULER_H
