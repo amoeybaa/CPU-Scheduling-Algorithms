@@ -19,7 +19,7 @@ Each algorithm constructs a Gantt chart to visualize scheduling, and calculates 
 - **Priority Scheduling (Preemptive)**
 - **Round Robin**
 
-### User-defined header file**: `Schedule.h` containing:
+### User-defined header file: `Schedule.h` containing:
 - Structure definitions for **`PROCESS`** and **`GANTT`** chart nodes
 - Functions to:
   - Read input (manually or via file)
