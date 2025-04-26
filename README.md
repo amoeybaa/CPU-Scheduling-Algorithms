@@ -59,4 +59,10 @@ Each algorithm constructs a Gantt chart to visualize scheduling, and calculates 
 3 6 4
 ```
 
-## Author
+## Author & acknowledgements
+
+This project was part of an educational assignment on simulating CPU Scheduling Algorithms from scratch in C.
+
+Made during my 6th Semester at Fergusson College pursuing B.Sc. (Computer Science) following the provided lab manual.
+
+Includes algorithms apart from the curriculum.
