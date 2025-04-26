@@ -45,6 +45,7 @@ typedef struct gantt
     struct gantt *next;
 }GANTT;
 
+// PROCESS struct related functions
 PROCESS* getProcesses(int);
 PROCESS* getProcessesPriority(int);
 int getProcessesFile(char *, PROCESS **);
@@ -63,9 +64,14 @@ GANTT* getGanttLJF(PROCESS *, int);
 GANTT* getGanttSRTF(PROCESS *, int);
 GANTT* getGanttPriorityPreemptive(PROCESS *, int);
 GANTT* getGanttLRTF(PROCESS *, int);
+GANTT* getGanttRoundRobin(PROCESS *, int, int);
 
+// GANTT struct related functions
 void displayGantt(GANTT *);
 void destroyGantt(GANTT *);
+
+// Additional supporting functions
+int min(int, int);
 
 PROCESS* getProcesses(int n) {
     /*
@@ -352,6 +358,11 @@ void displayProcesses(PROCESS *process, int n) {
             - Loop through processes and print each one's details.
     */
 
+    if(!process) {
+        printf("\nCannot display processes!\n");
+        return;
+    }
+
     float waitSum = 0, tatSum = 0;
     printf("\n\nWaiting time and Turn-around time:-");
     if(process[0].priority == -1) {
@@ -421,7 +432,7 @@ GANTT* getGanttFCFS(PROCESS *process, int n) {
             - Execute processes in order, updating GANTT linked list.
     */
 
-    if(n < 1) {
+    if(n < 1 || !process) {
         printf("\nInvalid number of Processes!\n");
         return NULL;
     }
@@ -522,7 +533,7 @@ GANTT* getGanttSJF(PROCESS *process, int n) {
             - Update GANTT chart and process stats.
     */
 
-    if(n < 1) {
+    if(n < 1 || !process) {
         printf("\nInvalid number of Processes!\n");
         return NULL;
     }
@@ -645,7 +656,7 @@ GANTT* getGanttHRRN(PROCESS *process, int n) {
             - Update GANTT chart and process stats.
     */
 
-    if(n < 1) {
+    if(n < 1 || !process) {
         printf("\nInvalid number of Processes!\n");
         return NULL;
     }
@@ -776,7 +787,7 @@ GANTT* getGanttPriority(PROCESS *process, int n) {
             - Execute, update GANTT chart.
     */
 
-    if(n < 1) {
+    if(n < 1 || !process) {
         printf("\nInvalid number of Processes!\n");
         return NULL;
     }
@@ -903,7 +914,7 @@ GANTT* getGanttLJF(PROCESS *process, int n) {
             - Update GANTT chart and stats.
     */
     
-    if(n < 1) {
+    if(n < 1 || !process) {
         printf("\nInvalid number of Processes!\n");
         return NULL;
     }
@@ -1027,7 +1038,7 @@ GANTT* getGanttSRTF(PROCESS *process, int n) {
             - Update GANTT chart and process stats.
     */
 
-    if(n < 1) {
+    if(n < 1 || !process) {
         printf("\nInvalid number of Processes!\n");
         return NULL;
     }
@@ -1148,7 +1159,7 @@ GANTT* getGanttPriorityPreemptive(PROCESS *process, int n) {
             - Update GANTT chart and process stats.
     */
 
-    if(n < 1) {
+    if(n < 1 || !process) {
         printf("\nInvalid number of Processes!\n");
         return NULL;
     }
@@ -1270,7 +1281,7 @@ GANTT* getGanttLRTF(PROCESS *process, int n) {
             - Update GANTT chart and process stats.
     */
 
-    if(n < 1) {
+    if(n < 1 || !process) {
         printf("\nInvalid number of Processes!\n");
         return NULL;
     }
@@ -1369,6 +1380,111 @@ GANTT* getGanttLRTF(PROCESS *process, int n) {
     return ghead;
 }
 
+GANTT* getGanttRoundRobin(PROCESS *process, int n, int time_slice) {
+
+    if(n < 1 || !process) {
+        printf("\nInvalid number of Processes!\n");
+        return NULL;
+    }
+
+    if(time_slice <= 0) {
+        printf("\nInvalid value of Time Slice!\n");
+        return NULL;
+    }
+
+    if(process) {
+        for(int i = 0; i < n-1; i++)                // sort according to arrival time
+        {
+            for(int j = i+1; j < n; j++)
+            {
+                if(process[i].arrive_time > process[j].arrive_time)
+                {
+                    PROCESS t = process[i];
+                    process[i] = process[j];
+                    process[j] = t;
+                    continue;
+                }
+            }
+        }
+    }
+    else {
+        printf("\nFailed to read the processes!\n");
+        return NULL;
+    }
+
+    GANTT *ghead = NULL, *gnew = NULL, *gcurr = NULL;
+    int completed = 0, curr_time = 0;
+    int queue[n], front = 0, rear = -1;
+    int *in_queue = (int *)calloc(n, sizeof(int));
+
+    while (completed < n) {
+
+        for(int i = 0; i < n; i++) {
+            if(process[i].arrive_time <= curr_time && process[i].burst_time > 0 && !in_queue[i]) {
+                queue[++rear] = i;
+                in_queue[i] = 1;
+            }
+        }
+
+        GANTT *gnew = (GANTT*)malloc(sizeof(GANTT));
+
+        if(front > rear) {            // queue is empty and system is IDLE
+            gnew->pid = -1;
+            gnew->start_time = curr_time;
+            gnew->finish_time = curr_time + 1;
+            gnew->next = NULL;
+            curr_time++;
+
+            if (!ghead) ghead = gcurr = gnew;
+            else {
+                if(gcurr && gcurr->pid == -1) {
+                    gcurr->finish_time = gnew->finish_time;
+                    free(gnew);
+                    gnew = NULL;
+                }
+                else {
+                    gcurr->next = gnew;
+                    gcurr = gnew;
+                }
+            }
+            continue;
+        }
+
+        int curr_idx = queue[front++];
+        gnew->pid = process[curr_idx].pid;
+        gnew->start_time = curr_time;
+        int exec_time = min(time_slice, process[curr_idx].burst_time);
+        gnew->finish_time = curr_time + exec_time;
+        gnew->next = NULL;
+
+        process[curr_idx].burst_time -= exec_time;
+        curr_time += exec_time;
+
+        if(!ghead) ghead = gcurr = gnew;
+        else {
+            gcurr->next = gnew;
+            gcurr = gnew;
+        }
+
+        for (int i = 0; i < n; ++i) {
+            if (process[i].arrive_time <= curr_time && process[i].burst_time > 0 && !in_queue[i]) {
+                queue[++rear] = i;
+                in_queue[i] = 1;
+            }
+        }
+
+        if(process[curr_idx].burst_time > 0) {
+            queue[++rear] = curr_idx;
+        }
+        else {
+            completed++;
+            process[curr_idx].turnaround_time = gnew->finish_time - process[curr_idx].arrive_time;
+            process[curr_idx].wait_time = process[curr_idx].turnaround_time - process[curr_idx].initial_burst;
+        }
+    }
+    return ghead;
+}
+
 void displayGantt(GANTT *ghead) {
     /*
         INTRODUCTION:
@@ -1386,6 +1502,11 @@ void displayGantt(GANTT *ghead) {
         APPROACH:
             - Traverse linked list and print PID, start and finish times.
     */
+
+    if(!ghead) {
+        printf("\nCannot read GANTT chart!\n");
+        return;
+    }
 
     printf("\nGant Chart:-");
     printf("\nStart\tPID\tFinish\n------------------------");
@@ -1426,6 +1547,11 @@ void destroyGantt(GANTT *ghead) {
         ghead = ghead->next;
         free(gcurr);
     }
+}
+
+int min(int a, int b) {
+    if(a < b) return a;
+    return b;
 }
 
 #endif          // SCHEDULER_H
